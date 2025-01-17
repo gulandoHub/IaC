@@ -1,0 +1,115 @@
+version: "3.5"
+
+services:
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - '5432:5432'
+    restart: always
+    environment:
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_DB: "Agregator"
+    networks:
+      - api-infra
+    volumes:
+      - postgres:/data/db
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    networks:
+      - api-infra
+    volumes:
+      - mongo:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+        - "RABBITMQ_DEFAULT_PASS=password"
+        - "RABBITMQ_DEFAULT_USER=user"
+    networks:
+      - api-infra
+    volumes: 
+      - rabbitmq:/var/lib/rabbitmq
+
+  redis:
+    image: redis
+    container_name: redis
+    restart: always
+    ports:
+      - 6379:6379
+    command: bash -c "redis-server --appendonly yes --requirepass password"
+    networks:
+      - api-infra
+    volumes: 
+      - redis:/data
+
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "token"
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - api-infra
+    volumes: 
+      - vault:/data
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    ports:
+      - 9000:9000   
+    networks:
+      - api-infra
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock 
+      - portainer:/data
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana:/var/lib/grafana
+    networks:
+      - api-infra  
+
+networks:
+  api-infra:
+    name: api-infra-network
+
+volumes:
+  mongo:
+    driver: local
+  postgres:
+    driver: local
+  rabbitmq:
+    driver: local
+  redis:
+    driver: local  
+  vault:
+    driver: local
+  portainer:
+    driver: local 
+  grafana:
+    driver: local     
